@@ -1,7 +1,9 @@
 package com.adventofcode.days;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.stream.IntStream;
 
 import com.adventofcode.AbstractAdventDay;
 
@@ -22,44 +24,30 @@ public class Day1 extends AbstractAdventDay {
 	public void partOne() {
 		ArrayList<Integer> list1 = new ArrayList<>();
 		ArrayList<Integer> list2 = new ArrayList<>();
-		for (String s : super.getInput()) {
-			String[] numbers = s.split("   ");
+		super.getInput().stream().map(s -> s.split("   ")).forEach(numbers -> {
 			list1.add(Integer.parseInt(numbers[0]));
 			list2.add(Integer.parseInt(numbers[1]));
-		}
-		list1.sort((a, b) -> Integer.compare(a, b));
-		list2.sort((a, b) -> Integer.compare(a, b));
-		long result = 0L;
-		for (int i = 0; i < list1.size(); i++) {
-			result += (Math.abs(list1.get(i) - list2.get(i)));
-		}
-		System.out.println("The total distance in the list is " + result);
+		});
+		list1.sort(Comparator.naturalOrder());
+		list2.sort(Comparator.naturalOrder());
+		int totalDistance = IntStream.range(0, list1.size())
+				.map(i -> (Math.abs(list1.get(i) - list2.get(i))))
+				.sum();
+		System.out.println("The total distance in the list is " + totalDistance);
 	}
 
 	@Override
 	public void partTwo() {
 		ArrayList<Integer> list1 = new ArrayList<>();
 		HashMap<Integer, Integer> mapForList2 = new HashMap<>();
-		for (String s : super.getInput()) {
-			String[] numbers = s.split("   ");
+		super.getInput().stream().map(s -> s.split("   ")).forEach(numbers -> {
 			list1.add(Integer.parseInt(numbers[0]));
-			Integer secondListNumber = Integer.parseInt(numbers[1]);
-			if (mapForList2.containsKey(secondListNumber)) {
-				mapForList2.put(secondListNumber, mapForList2.get(secondListNumber) + 1);
-			} else {
-				mapForList2.put(secondListNumber, 1);
-			}
-		}
-		long result = 0L;
-		for (Integer currentNumber : list1) {
-			Integer numberCount = mapForList2.get(currentNumber);
-			if (numberCount == null) {
-				continue;
-			}
-			long similarityScore = currentNumber * numberCount;
-			result += similarityScore;
-		}
-		System.out.println("The similarity score  is " + result);
+			mapForList2.merge(Integer.parseInt(numbers[1]), 1, Integer::sum);
+		});
+		int similarityScore = list1.stream()
+				.mapToInt(num -> num * mapForList2.getOrDefault(num, 0))
+				.sum();
+		System.out.println("The similarity score is " + similarityScore);
 	}
 
 }
