@@ -16,14 +16,12 @@ public class Day2 extends AbstractAdventDay {
         Day2 day = new Day2();
         day.partOne();
         day.partTwo();
-
     }
 
     @Override
     public void partOne() {
         long safeReportCount = super.getInput().stream()
-                .map(s -> isSafeReport(Stream.of(s.split(" ")).map(Integer::parseInt).toList()))
-                .filter(b -> b == true)
+                .filter(s -> isSafeReport(Stream.of(s.split(" ")).map(Integer::parseInt).toList()))
                 .count();
         System.out.println("The count of safe reports is " + safeReportCount);
     }
@@ -31,20 +29,19 @@ public class Day2 extends AbstractAdventDay {
     @Override
     public void partTwo() {
         long safeReportCount = super.getInput().stream()
-                .map(s -> isSafeReportWithDampener(
+                .filter(s -> isSafeReportWithDampener(
                         Stream.of(s.split(" ")).map(Integer::parseInt).collect(Collectors.toList())))
-                .filter(b -> b == true)
                 .count();
-        System.out.println("The count of safe reports is " + safeReportCount);
+        System.out.println("The dampened count of safe reports is " + safeReportCount);
     }
 
     private boolean isSafeReport(List<Integer> levels) {
-        boolean isAscending = levels.get(0) > levels.get(1) ? false : true;
+        boolean isAscending = levels.get(0) < levels.get(1);
+        int min = isAscending ? -3 : 1;
+        int max = isAscending ? -1 : 3;
         for (int i = 0; i < levels.size() - 1; i++) {
-            if (!isAscending && (levels.get(i) - levels.get(i + 1) >= 1 && levels.get(i) - levels.get(i + 1) <= 3) ||
-                    isAscending
-                            && (levels.get(i) - levels.get(i + 1) >= -3 && levels.get(i) - levels.get(i + 1) <= -1)) {
-            } else {
+            int difference = levels.get(i) - levels.get(i + 1);
+            if (difference < min || difference > max) {
                 return false;
             }
         }
@@ -55,16 +52,16 @@ public class Day2 extends AbstractAdventDay {
         if (isSafeReport(levels)) {
             return true;
         } else {
+            // Brute Force
             for (int i = 0; i < levels.size(); i++) {
-                Integer buffer = levels.get(i);
+                Integer storeForDeletion = levels.get(i);
                 levels.remove(i);
                 if (isSafeReport(levels)) {
                     return true;
                 }
-                levels.add(i, buffer);
+                levels.add(i, storeForDeletion);
             }
         }
         return false;
     }
-
 }
