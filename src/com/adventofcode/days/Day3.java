@@ -22,10 +22,16 @@ public class Day3 extends AbstractAdventDay {
         System.out.println("The multiplication result is " + multiplicationResult);
     }
 
-    private long getCorruptedMultiplicationResult(String s) {
-        System.out.println(s);
-        System.out.println();
+    @Override
+    public void partTwo() {
+        // the line breaks need to be disregarded when checking,
+        // so the String List needs to be concatinated
+        long multiplicationResult = getCorruptedMultiplicationResultWithDoDOnt(
+                super.getInput().stream().collect(Collectors.joining()));
+        System.out.println("The enabled multiplication result is " + multiplicationResult);
+    }
 
+    private long getCorruptedMultiplicationResult(String s) {
         long sum = 0;
         while (true) {
             int beginIndex = s.indexOf("mul(");
@@ -64,25 +70,13 @@ public class Day3 extends AbstractAdventDay {
         return 0;
     }
 
-    @Override
-    public void partTwo() {
-        long multiplicationResult = getCorruptedMultiplicationResultWithDoDOnt(
-                super.getInput().stream().collect(Collectors.joining()));
-        System.out.println("The multiplication result is " + multiplicationResult);
-    }
-
     private long getCorruptedMultiplicationResultWithDoDOnt(String s) {
         long sum = 0;
-        while (true) {
-            int disableIndex = s.indexOf("don't()");
-            sum += getCorruptedMultiplicationResult(s.substring(0, disableIndex));
-            s = s.substring(disableIndex + "dont't()".length());
-            int enableIndex = s.indexOf("do()");
-            s = s.substring(enableIndex + "do()".length());
-            if (!s.contains("don't()")) {
-                sum += getCorruptedMultiplicationResult(s);
-                break;
-            }
+        // split the string where there is "don't()" followed by a "do()" with any
+        // characters in between, so only the valid parts of the string stay
+        for (String ss : s.split("don't\\(\\).*?do\\(\\)")) {
+            sum += getCorruptedMultiplicationResult(ss);
+
         }
         return sum;
     }
