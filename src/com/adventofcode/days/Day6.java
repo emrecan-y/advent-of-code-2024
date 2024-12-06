@@ -1,13 +1,8 @@
 package com.adventofcode.days;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import com.adventofcode.AbstractAdventDay;
 
@@ -39,8 +34,18 @@ public class Day6 extends AbstractAdventDay {
     private int getGuardDistinctPosCount(List<List<Character>> map, Coordinates guardPos) {
         HashSet<Coordinates> distinctPositions = new HashSet<>();
         Character guard = map.get(guardPos.getY()).get(guardPos.getX());
+
+        int countSetSizeUnchanged = 0;
         while (true) {
-            distinctPositions.add(new Coordinates(guardPos.getX(), guardPos.getY()));
+            Coordinates guardPosCopy = new Coordinates(guardPos.getX(), guardPos.getY());
+            if (distinctPositions.add(guardPosCopy)) {
+                countSetSizeUnchanged = 0;
+            } else if (countSetSizeUnchanged > 1000) {
+                return -1;
+            } else {
+                countSetSizeUnchanged++;
+            }
+
             Coordinates move = getMove(guard);
             int newY = guardPos.getY() + move.getY();
             int newX = guardPos.getX() + move.getX();
@@ -55,18 +60,27 @@ public class Day6 extends AbstractAdventDay {
                 guardPos.setY(newY);
             }
         }
-
-        // for (int y = 0; y < map.size(); y++) {
-        // for (int x = 0; x < map.get(y).size(); x++) {
-        // if (distinctPositions.contains(new Coordinates(x, y))) {
-        // System.out.print('X');
-        // } else {
-        // System.out.print(map.get(y).get(x));
-        // }
-        // }
-        // System.out.println();
-        // }
         return distinctPositions.size();
+    }
+
+    private int getCycleCount(List<List<Character>> map, Coordinates guardPos) {
+        int count = 0;
+        for (int y = 0; y < map.size(); y++) {
+            for (int x = 0; x < map.get(y).size(); x++) {
+                if (x == guardPos.getX() && y == guardPos.getY()) {
+                    continue;
+                }
+                if (map.get(y).get(x) != OBSTRUCTION) {
+                    map.get(y).set(x, OBSTRUCTION);
+                    Coordinates guardPosCopy = new Coordinates(guardPos.getX(), guardPos.getY());
+                    if (getGuardDistinctPosCount(map, guardPosCopy) == -1) {
+                        count++;
+                    }
+                    map.get(y).set(x, '.');
+                }
+            }
+        }
+        return count;
     }
 
     private Coordinates findGuardPosition(List<List<Character>> map) {
@@ -112,7 +126,12 @@ public class Day6 extends AbstractAdventDay {
 
     @Override
     public void partTwo() {
+        List<List<Character>> map = super.getInput().stream()
+                .map(s -> s.chars().mapToObj(c -> (char) c).collect(Collectors.toList()))
+                .collect(Collectors.toList());
 
+        Coordinates guardPos = findGuardPosition(map);
+        System.out.println(getCycleCount(map, guardPos));
     }
 
     private class Coordinates {
