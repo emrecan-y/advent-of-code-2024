@@ -1,7 +1,8 @@
 package com.adventofcode.days;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
 import com.adventofcode.AbstractAdventDay;
@@ -21,109 +22,69 @@ public class Day7 extends AbstractAdventDay {
 
     @Override
     public void partOne() {
-        long calibrationCount = super.getInput().stream().mapToLong(s -> getCalibrationCount(s)).sum();
+        long calibrationCount = super.getInput().stream().mapToLong(s -> getCalibrationCount(s, true)).sum();
         System.out.println("The calibration count is " + calibrationCount);
     }
 
     @Override
     public void partTwo() {
-        long calibrationCount = super.getInput().stream().mapToLong(s -> getCalibrationCountPipe(s)).sum();
+        long calibrationCount = super.getInput().stream().mapToLong(s -> getCalibrationCount(s, false)).sum();
         System.out.println("The calibration count is " + calibrationCount);
     }
 
-    private long getCalibrationCount(String s) {
-        long sumOfTestValues = 0;
+    private long getCalibrationCount(String s, boolean solvePart1) {
+        long calibrationCount = 0;
 
         String[] equation = s.split(": ");
         long expectedResult = Long.parseLong(equation[0]);
         int[] numbers = Stream.of(equation[1].split(" ")).mapToInt(Integer::parseInt).toArray();
 
-        List<String> allCombinations = gettAllCombinationsFromBinaryString(numbers.length - 1);
-
+        List<String> allCombinations = gettAllCombinationsAsString(numbers.length - 1, solvePart1);
         for (String combination : allCombinations) {
             long actualResult = numbers[0];
             for (int i = 0; i < combination.length(); i++) {
-                // 0 means addition, 1 means multiplication
-                if (combination.charAt(i) == '0') {
-                    actualResult += numbers[i + 1];
-                } else {
-                    actualResult *= numbers[i + 1];
-                }
+                actualResult = calculateNumber(actualResult, numbers[i + 1], combination.charAt(i));
             }
             if (actualResult == expectedResult) {
-                sumOfTestValues += actualResult;
+                calibrationCount += actualResult;
                 break;
             }
         }
-
-        return sumOfTestValues;
+        return calibrationCount;
     }
 
-    private long getCalibrationCountPipe(String s) {
-        long sumOfTestValues = 0;
+    private List<String> gettAllCombinationsAsString(int desiredLength, boolean solvePart1) {
+        // get the maximum decimal value of possible combinations
+        long possibleCombinations = solvePart1 ? (long) Math.pow(2, desiredLength) : (long) Math.pow(3, desiredLength);
 
-        String[] equation = s.split(": ");
-        long expectedResult = Long.parseLong(equation[0]);
-        int[] numbers = Stream.of(equation[1].split(" ")).mapToInt(Integer::parseInt).toArray();
-
-        List<String> allCombinations = gettAllCombinationsFromTernaryString(numbers.length - 1);
-
-        for (String combination : allCombinations) {
-            long actualResult = numbers[0];
-            for (int i = 0; i < combination.length(); i++) {
-                // 0 means addition, 1 means multiplication, 2 means pipe
-                switch (combination.charAt(i)) {
-                    case '0':
-                        actualResult += numbers[i + 1];
-                        break;
-                    case '1':
-                        actualResult *= numbers[i + 1];
-                        break;
-                    case '2':
-                        String newNum = String.valueOf(actualResult) + String.valueOf(numbers[i + 1]);
-                        actualResult = Long.parseLong(newNum);
-                        break;
-                    default:
-                        break;
-                }
-            }
-            if (actualResult == expectedResult) {
-                sumOfTestValues += actualResult;
-                break;
-            }
-        }
-
-        return sumOfTestValues;
+        return LongStream.range(0, possibleCombinations)
+                .mapToObj(decimalValue -> getCombinationString(decimalValue, desiredLength, solvePart1))
+                .collect(Collectors.toList());
     }
 
-    private List<String> gettAllCombinationsFromBinaryString(int desiredLength) {
-        List<String> combinations = new ArrayList<>();
-        long startingValue = (int) Math.pow(2, desiredLength) - 1;
-        while (startingValue >= 0) {
-            String binaryString = Long.toBinaryString(startingValue);
-            if (binaryString.length() < desiredLength) {
-                String missingZeros = "0".repeat(desiredLength - binaryString.length());
-                binaryString = missingZeros + binaryString;
-            }
-            combinations.add(binaryString);
-            startingValue--;
+    private String getCombinationString(long decimalValue, int desiredLength, boolean solvePart1) {
+        // get binary/ternery representation of current decimal and add zeros if missing
+        String combinationString = solvePart1 ? Long.toBinaryString(decimalValue) : toTernaryString(decimalValue);
+        if (combinationString.length() < desiredLength) {
+            String missingZeros = "0".repeat(desiredLength - combinationString.length());
+            combinationString = missingZeros + combinationString;
         }
-        return combinations;
+        return combinationString;
     }
 
-    private List<String> gettAllCombinationsFromTernaryString(int desiredLength) {
-        List<String> combinations = new ArrayList<>();
-        long startingValue = (int) Math.pow(3, desiredLength) - 1;
-        while (startingValue >= 0) {
-            String ternaryString = toTernaryString(startingValue);
-            if (ternaryString.length() < desiredLength) {
-                String missingZeros = "0".repeat(desiredLength - ternaryString.length());
-                ternaryString = missingZeros + ternaryString;
-            }
-            combinations.add(ternaryString);
-            startingValue--;
+    private long calculateNumber(long result, long nextNumber, char operation) {
+        // 0 means addition, 1 means multiplication, 2 means join as string
+        switch (operation) {
+            case '0':
+                return result + nextNumber;
+            case '1':
+                return result * nextNumber;
+            case '2':
+                String newNum = String.valueOf(result) + String.valueOf(nextNumber);
+                return Long.parseLong(newNum);
+            default:
+                return 0;
         }
-        return combinations;
     }
 
     // Ternary (Base-3) -> 0, 1, 2
