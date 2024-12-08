@@ -26,29 +26,12 @@ public class Day8 extends AbstractAdventDay {
 
     @Override
     public void partOne() {
-        List<List<Character>> map = super.getInput().stream()
-                .map(s -> s.chars().mapToObj(c -> (char) c).collect(Collectors.toList()))
-                .collect(Collectors.toList());
-
-        final int ySize = map.size();
-        final int xSize = map.get(0).size();
-        Map<Character, List<Coordinate>> frequencyMap = new HashMap<>();
-
-        // create a map of the antennas with the same frequncy and their locations
-        for (int y = 0; y < ySize; y++) {
-            for (int x = 0; x < xSize; x++) {
-                Character currChar = map.get(y).get(x);
-                if (currChar != '.') {
-                    frequencyMap.merge(currChar, new ArrayList<>(List.of(new Coordinate(x, y))), (list, newVal) -> {
-                        list.addAll(newVal);
-                        return list;
-                    });
-                }
-            }
-        }
+        Map<Character, List<Coordinate>> frequencyMap = getFrequencyMap();
+        final int xSize = super.getInput().get(0).length();
+        final int ySize = super.getInput().size();
 
         Set<Coordinate> distinctAntinodeLocations = frequencyMap.values().stream()
-                .flatMap(list -> getPermutationPairsOfList(list).stream())
+                .flatMap(list -> getPairCombinationSetFromList(list).stream())
                 .flatMap(pair -> getAntinodeCoordinates(pair).stream())
                 .filter(c -> isCoordinateInsideMap(c, xSize, ySize))
                 .collect(Collectors.toSet());
@@ -58,6 +41,70 @@ public class Day8 extends AbstractAdventDay {
 
     @Override
     public void partTwo() {
+        Map<Character, List<Coordinate>> frequencyMap = getFrequencyMap();
+        final int xSize = super.getInput().get(0).length();
+        final int ySize = super.getInput().size();
+
+        Set<Coordinate> distinctAntinodeLocations = frequencyMap.values().stream()
+                .flatMap(list -> getPairCombinationSetFromList(list).stream())
+                .flatMap(pair -> getExtendedAntinodeCoordinates(pair, xSize, ySize).stream())
+                .collect(Collectors.toSet());
+
+        System.out.println(distinctAntinodeLocations.size());
+    }
+
+    private Map<Character, List<Coordinate>> getFrequencyMap() {
+        Map<Character, List<Coordinate>> frequencyMap = new HashMap<>();
+        List<String> input = super.getInput();
+        for (int y = 0; y < input.size(); y++) {
+            for (int x = 0; x < input.get(y).length(); x++) {
+                Character currChar = input.get(y).charAt(x);
+                if (currChar != '.') {
+                    frequencyMap.merge(currChar, new ArrayList<>(List.of(new Coordinate(x, y))), (list, newVal) -> {
+                        list.addAll(newVal);
+                        return list;
+                    });
+                }
+            }
+        }
+        return frequencyMap;
+    }
+
+    private List<Coordinate> getAntinodeCoordinates(List<Coordinate> coordinatePair) {
+        Coordinate antenna1 = coordinatePair.get(0);
+        Coordinate antenna2 = coordinatePair.get(1);
+
+        int xDiff = antenna1.getX() - antenna2.getX();
+        int yDiff = antenna1.getY() - antenna2.getY();
+
+        Coordinate antinode1 = new Coordinate(antenna1.getX() + xDiff, antenna1.getY() + yDiff);
+        Coordinate antinode2 = new Coordinate(antenna2.getX() - xDiff, antenna2.getY() - yDiff);
+
+        return List.of(antinode1, antinode2);
+    }
+
+    private List<Coordinate> getExtendedAntinodeCoordinates(List<Coordinate> coordinatePair, int xSize, int ySize) {
+        Coordinate antenna1 = coordinatePair.get(0);
+        Coordinate antenna2 = coordinatePair.get(1);
+
+        int xDiff = antenna1.getX() - antenna2.getX();
+        int yDiff = antenna1.getY() - antenna2.getY();
+
+        List<Coordinate> list = new ArrayList<>(List.of(antenna1, antenna2));
+
+        Coordinate antinode1 = new Coordinate(antenna1.getX() + xDiff, antenna1.getY() + yDiff);
+        while (isCoordinateInsideMap(antinode1, xSize, ySize)) {
+            list.add(antinode1);
+            antinode1 = new Coordinate(antinode1.getX() + xDiff, antinode1.getY() + yDiff);
+        }
+
+        Coordinate antinode2 = new Coordinate(antenna2.getX() - xDiff, antenna2.getY() - yDiff);
+        while (isCoordinateInsideMap(antinode2, xSize, ySize)) {
+            list.add(antinode2);
+            antinode2 = new Coordinate(antinode2.getX() - xDiff, antinode2.getY() - yDiff);
+        }
+
+        return list;
 
     }
 
@@ -69,22 +116,8 @@ public class Day8 extends AbstractAdventDay {
         }
     }
 
-    private List<Coordinate> getAntinodeCoordinates(List<Coordinate> coordinatePair) {
-        Coordinate antenna1 = coordinatePair.get(0);
-        Coordinate antenna2 = coordinatePair.get(1);
-        if (antenna1.equals(antenna2)) {
-            return new ArrayList<>();
-        }
-        int xDiff = antenna1.getX() - antenna2.getX();
-        int yDiff = antenna1.getY() - antenna2.getY();
-
-        Coordinate antinode1 = new Coordinate(antenna1.getX() + xDiff, antenna1.getY() + yDiff);
-        Coordinate antinode2 = new Coordinate(antenna2.getX() - xDiff, antenna2.getY() - yDiff);
-        return List.of(antinode1, antinode2);
-
-    }
-
-    private <T> Set<List<T>> getPermutationPairsOfList(List<T> list) {
+    // return all possible pair combinations from a list
+    private <T> Set<List<T>> getPairCombinationSetFromList(List<T> list) {
         Set<List<T>> permutationPairSet = new HashSet<>();
         for (int firstIndex = 0; firstIndex < list.size(); firstIndex++) {
             for (int secondIndex = firstIndex + 1; secondIndex < list.size(); secondIndex++) {
@@ -97,8 +130,7 @@ public class Day8 extends AbstractAdventDay {
         return permutationPairSet;
     }
 
-    private void printResult(List<List<Character>> map, HashSet<Coordinate> distinctAntinodeLocations) {
-        // print map
+    private void printResult(List<List<Character>> map, Set<Coordinate> distinctAntinodeLocations) {
         for (int y = 0; y < map.size(); y++) {
             for (int x = 0; x < map.get(0).size(); x++) {
                 if (distinctAntinodeLocations.contains(new Coordinate(x, y))) {
@@ -107,7 +139,7 @@ public class Day8 extends AbstractAdventDay {
                     System.out.print(map.get(y).get(x));
                 }
             }
-            System.err.println();
+            System.out.println();
         }
     }
 
