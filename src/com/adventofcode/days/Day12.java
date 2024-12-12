@@ -35,7 +35,7 @@ public class Day12 extends AbstractAdventDay {
 
         for (int y = 0; y < map2d.size(); y++) {
             for (int x = 0; x < map2d.get(y).size(); x++) {
-                edgeCount.merge(map2d.get(y).get(x), getFencePrice(map2d, x, y), Integer::sum);
+                edgeCount.merge(map2d.get(y).get(x), getFencePrice(map2d, x, y, false), Integer::sum);
             }
         }
         int sum = edgeCount.keySet().stream().mapToInt(p -> edgeCount.get(p)).sum();
@@ -45,10 +45,22 @@ public class Day12 extends AbstractAdventDay {
 
     @Override
     public void partTwo() {
+        Map<Character, Integer> edgeCount = new HashMap<>();
 
+        List<List<Character>> map2d = super.getInput().stream()
+                .map(s -> s.chars().mapToObj(c -> (char) c).collect(Collectors.toList()))
+                .collect(Collectors.toList());
+
+        for (int y = 0; y < map2d.size(); y++) {
+            for (int x = 0; x < map2d.get(y).size(); x++) {
+                edgeCount.merge(map2d.get(y).get(x), getFencePrice(map2d, x, y, true), Integer::sum);
+            }
+        }
+        int sum = edgeCount.keySet().stream().mapToInt(p -> edgeCount.get(p)).sum();
+        System.out.println(sum);
     }
 
-    private int getFencePrice(List<List<Character>> map2d, int x, int y) {
+    private int getFencePrice(List<List<Character>> map2d, int x, int y, boolean discount) {
         Character plot = map2d.get(y).get(x);
         if (plot == '#') {
             return 0;
@@ -69,9 +81,16 @@ public class Day12 extends AbstractAdventDay {
             edgeCount += getEdgeCountForPlot(map2d, plot, coordinate, new Coordinate(0, 1), visitedPlots, bfs);
         }
 
+        int fencePrice = 0;
+        if (discount) {
+            fencePrice = getCornerCountForPlots(visitedPlots) * visitedPlots.size();
+        } else {
+            fencePrice = edgeCount * visitedPlots.size();
+        }
+
         visitedPlots.forEach(c -> map2d.get(c.getY()).set(c.getX(), '#'));
 
-        return edgeCount * visitedPlots.size();
+        return fencePrice;
     }
 
     private int getEdgeCountForPlot(List<List<Character>> map2d, Character plot, Coordinate coordinate,
@@ -94,6 +113,53 @@ public class Day12 extends AbstractAdventDay {
         }
 
         return edgeCount;
+    }
+
+    private int getCornerCountForPlots(Set<Coordinate> visitedPlots) {
+        Coordinate top = new Coordinate(0, -1);
+        Coordinate topRight = new Coordinate(1, -1);
+        Coordinate right = new Coordinate(1, 0);
+        Coordinate bottomRight = new Coordinate(1, 1);
+        Coordinate bottom = new Coordinate(0, 1);
+        Coordinate bottomLeft = new Coordinate(-1, 1);
+        Coordinate left = new Coordinate(-1, 0);
+        Coordinate topLeft = new Coordinate(-1, -1);
+
+        int cornerCount = 0;
+
+        for (Coordinate c : visitedPlots) {
+            if (!visitedPlots.contains(Coordinate.add(c, top)) && !visitedPlots.contains(Coordinate.add(c, right))) {
+                cornerCount++;
+            }
+            if (!visitedPlots.contains(Coordinate.add(c, right)) && !visitedPlots.contains(Coordinate.add(c, bottom))) {
+                cornerCount++;
+            }
+            if (!visitedPlots.contains(Coordinate.add(c, bottom)) && !visitedPlots.contains(Coordinate.add(c, left))) {
+                cornerCount++;
+            }
+            if (!visitedPlots.contains(Coordinate.add(c, left)) && !visitedPlots.contains(Coordinate.add(c, top))) {
+                cornerCount++;
+            }
+
+            if (visitedPlots.contains(Coordinate.add(c, top)) && visitedPlots.contains(Coordinate.add(c, right))
+                    && !visitedPlots.contains(Coordinate.add(c, topRight))) {
+                cornerCount++;
+            }
+            if (visitedPlots.contains(Coordinate.add(c, right)) && visitedPlots.contains(Coordinate.add(c, bottom))
+                    && !visitedPlots.contains(Coordinate.add(c, bottomRight))) {
+                cornerCount++;
+            }
+            if (visitedPlots.contains(Coordinate.add(c, bottom)) && visitedPlots.contains(Coordinate.add(c, left))
+                    && !visitedPlots.contains(Coordinate.add(c, bottomLeft))) {
+                cornerCount++;
+            }
+            if (visitedPlots.contains(Coordinate.add(c, left)) && visitedPlots.contains(Coordinate.add(c, top))
+                    && !visitedPlots.contains(Coordinate.add(c, topLeft))) {
+                cornerCount++;
+            }
+        }
+
+        return cornerCount;
     }
 
 }
