@@ -3,6 +3,7 @@ package com.adventofcode.days;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
@@ -59,7 +60,43 @@ public class Day14 extends AbstractAdventDay {
 
     @Override
     public void partTwo() {
+        // I assumed there was going to be a symetrical tree, because of the first part
+        // with the quadrants, but that wasnt the case. Still after a few times checking
+        // with different thresholds i found the tree
+        List<Robot> robots = getRobots();
+        long seconds = 0;
+        System.out.println(seconds);
 
+        while (true) {
+            robots.stream().forEach(robot -> robot.moveRobot());
+            seconds++;
+            if (isVerticallySymetrical(robots)) {
+                printRobots(robots);
+                System.out
+                        .println("Is this a christmas tree? Second count " + seconds
+                                + " Press enter to continue search;");
+                Scanner sc = new Scanner(System.in);
+                sc.nextLine();
+            }
+
+        }
+    }
+
+    private boolean isVerticallySymetrical(List<Robot> robots) {
+        Set<Coordinate> positions = robots.stream().map(robot -> robot.position).collect(Collectors.toSet());
+
+        int symetricalCount = 0;
+        for (int y = 0; y < BATHROOM_Y; y++) {
+            for (int x = 0; x < BATHROOM_X / 2; x++) {
+                Coordinate left = new Coordinate(x, y);
+                Coordinate right = new Coordinate(BATHROOM_X - x - 1, y);
+                if (positions.contains(left) && positions.contains(right)) {
+                    symetricalCount++;
+                }
+            }
+        }
+
+        return symetricalCount > 35;
     }
 
     private long getRobotCountInArea(Map<Coordinate, Long> robotCount, Coordinate start, Coordinate end) {
